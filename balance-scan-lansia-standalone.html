@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Balance Scan Lansia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: satu kolom 560px, satu tugas per layar, penghitung waktu besar yang bisa dibaca pendamping dari jauh */
+:root {
+  --bg: #f2f6fb;
+  --surface: #ffffff;
+  --fg: #11233a;
+  --muted: #4a5f78;
+  --line: #c8d6e6;
+  --accent: #1a5fb4;
+  --accent-fg: #ffffff;
+  --accent-soft: #dce9f9;
+  --ok: #17703a;
+  --ok-soft: #dcf2e3;
+  --warn: #8a5a00;
+  --warn-soft: #fbecc8;
+  --bad: #a3231f;
+  --bad-soft: #fbdedc;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", Arial, sans-serif;
+  --font-head: "Lexend", "Atkinson Hyperlegible", "Segoe UI", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1726; --surface: #152336; --fg: #e5eefa; --muted: #9bb0c8; --line: #2a3d57;
+    --accent: #78b0ff; --accent-fg: #06192e; --accent-soft: #19304d;
+    --ok: #6fd391; --ok-soft: #173a25; --warn: #f0c35a; --warn-soft: #3b2f10; --bad: #ff8d86; --bad-soft: #43201e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1726; --surface: #152336; --fg: #e5eefa; --muted: #9bb0c8; --line: #2a3d57;
+  --accent: #78b0ff; --accent-fg: #06192e; --accent-soft: #19304d;
+  --ok: #6fd391; --ok-soft: #173a25; --warn: #f0c35a; --warn-soft: #3b2f10; --bad: #ff8d86; --bad-soft: #43201e;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 400 19px/1.55 var(--font-body);
+  padding-block: 20px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+h1, h2, h3 { font-family: var(--font-head); text-wrap: balance; margin: 0; line-height: 1.25; }
+h1 { font-size: 26px; font-weight: 700; }
+h2 { font-size: 23px; font-weight: 700; }
+h3 { font-size: 19px; font-weight: 700; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 16px; }
+.top { display: flex; flex-direction: column; gap: 10px; }
+.top-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.sub { font-size: 16px; color: var(--muted); }
+.steplabel { font-size: 16px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; }
+.bar i { height: 8px; border-radius: 4px; background: var(--line); }
+.bar i.done { background: var(--accent); }
+.bar i.now { background: var(--accent); opacity: .55; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.btn {
+  appearance: none; border: 2px solid var(--accent); background: var(--accent); color: var(--accent-fg);
+  font: 700 20px/1.2 var(--font-body); min-height: 58px; padding: 12px 20px; border-radius: 12px; cursor: pointer; width: 100%;
+}
+.btn.alt { background: transparent; color: var(--accent); }
+.btn.quiet { border-color: var(--line); background: transparent; color: var(--fg); font-weight: 400; }
+.btn.stop { background: var(--bad); border-color: var(--bad); color: #fff; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn:focus-visible, input:focus-visible, .seg input:focus-visible + span, .chk:focus-within { outline: 3px solid var(--fg); outline-offset: 3px; }
+.btns { display: flex; flex-direction: column; gap: 10px; }
+.ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; }
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field label.l { font-weight: 700; }
+input[type=number] { font: 700 24px var(--font-body); min-height: 58px; padding: 8px 14px; border-radius: 12px; border: 2px solid var(--line); background: var(--bg); color: var(--fg); width: 100%; }
+.seg { display: grid; gap: 8px; }
+.seg.c2 { grid-template-columns: repeat(2, 1fr); }
+.seg.c3 { grid-template-columns: repeat(3, 1fr); }
+.seg label { position: relative; display: block; }
+.seg input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.seg span { display: grid; place-items: center; min-height: 54px; padding: 8px 6px; border: 2px solid var(--line); border-radius: 12px; font-weight: 700; text-align: center; background: var(--bg); }
+.seg input:checked + span { border-color: var(--accent); background: var(--accent); color: var(--accent-fg); }
+fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+fieldset + fieldset { border-top: 1px solid var(--line); padding-top: 14px; }
+legend { padding: 0; margin-bottom: 8px; }
+.chk { display: flex; gap: 14px; align-items: flex-start; padding: 12px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
+.chk input { width: 28px; height: 28px; flex: none; margin: 2px 0 0; accent-color: var(--accent); }
+.clock { background: var(--bg); border: 2px solid var(--line); border-radius: 14px; padding: 18px 12px; text-align: center; display: flex; flex-direction: column; gap: 4px; }
+.clock .t { font: 700 72px/1 var(--font-head); font-variant-numeric: tabular-nums; }
+.clock .u { font-size: 16px; color: var(--muted); }
+.counter { display: grid; grid-template-columns: 64px 1fr 64px; gap: 10px; align-items: center; }
+.counter .btn { padding: 0; font-size: 30px; }
+.counter .n { font: 700 56px/1 var(--font-head); text-align: center; font-variant-numeric: tabular-nums; }
+.tap { min-height: 120px; font-size: 28px; }
+.notice { border-radius: 12px; padding: 14px; border: 2px solid var(--warn); background: var(--warn-soft); }
+.verdict { border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 8px; border: 2px solid; }
+.verdict.ok { background: var(--ok-soft); border-color: var(--ok); }
+.verdict.warn { background: var(--warn-soft); border-color: var(--warn); }
+.verdict.bad { background: var(--bad-soft); border-color: var(--bad); }
+.verdict .big { font: 700 28px/1.2 var(--font-head); }
+.rows { display: flex; flex-direction: column; }
+.row { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px 0; border-top: 1px solid var(--line); align-items: start; }
+.row:first-child { border-top: 0; }
+.row .val { font-variant-numeric: tabular-nums; font-weight: 700; text-align: right; }
+.row .note { grid-column: 1 / -1; font-size: 16px; color: var(--muted); }
+.pill { display: inline-block; font-size: 15px; font-weight: 700; padding: 2px 10px; border-radius: 999px; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+pre.sum { white-space: pre-wrap; font: 400 16px/1.5 var(--font-body); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin: 0; user-select: all; }
+.hist { display: flex; flex-direction: column; gap: 4px; font-size: 16px; }
+.disc { font-size: 15px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+@media (prefers-reduced-motion: no-preference) { .btn { transition: transform .08s; } .btn:active { transform: scale(.98); } }
+</style>
+
+<style>body{margin:0}</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="top-row"><h1>BALANCE SCAN</h1><span class="steplabel" id="steplabel"></span></div>
+    <p class="sub">Alat skrining keseimbangan dan vertigo pada lansia</p>
+    <div class="bar" id="bar"></div>
+  </div>
+  <main id="app" aria-live="polite"></main>
+  <p class="disc">Alat ini hanya untuk skrining awal risiko jatuh dan keluhan pusing. Hasilnya tidak menggantikan pemeriksaan dokter. Lakukan tes dengan pendamping di dekat lansia.</p>
+</div>
+
+<script>
+(function () {
+  var app = document.getElementById('app');
+  var STEPS = [
+    { id: 'start', label: 'Persiapan' },
+    { id: 'red', label: 'Tanda bahaya' },
+    { id: 'fall', label: 'Riwayat jatuh' },
+    { id: 'diz', label: 'Keluhan pusing' },
+    { id: 'cs', label: 'Duduk-berdiri 30 detik' },
+    { id: 'fs', label: 'Keseimbangan 4 tahap' },
+    { id: 'tug', label: 'Tes jalan' },
+    { id: 'res', label: 'Hasil' }
+  ];
+  var RED = [
+    'Pusing atau melayang yang muncul mendadak dan berat hari ini',
+    'Wajah mencong, bicara pelo, atau sulit mencari kata',
+    'Lemah atau kesemutan pada satu sisi tubuh',
+    'Sakit kepala yang sangat hebat dan mendadak',
+    'Pandangan ganda atau mendadak tidak bisa melihat',
+    'Nyeri dada, sesak napas, atau pingsan'
+  ];
+  var FALL = [
+    'Apakah Anda pernah jatuh dalam 12 bulan terakhir?',
+    'Apakah Anda merasa tidak stabil saat berdiri atau berjalan?',
+    'Apakah Anda khawatir akan jatuh?'
+  ];
+  var DIZ = [
+    'Pusing bertambah saat menengadah atau melihat ke atas',
+    'Pusing membuat saya enggan bepergian sendiri',
+    'Pusing muncul saat berbalik atau bangun di tempat tidur',
+    'Saya merasa ruangan atau diri saya berputar',
+    'Pusing membuat saya sulit membungkuk atau mengambil barang di lantai',
+    'Saya sulit berjalan di tempat ramai atau di lantai licin',
+    'Pusing muncul saat berdiri tiba-tiba dari duduk atau berbaring',
+    'Saya takut terjatuh karena pusing',
+    'Pusing mengganggu pekerjaan rumah atau kegiatan sehari-hari',
+    'Pusing membuat saya cemas atau tidak nyaman'
+  ];
+  var STAGES = [
+    { n: 'Kaki rapat', d: 'Berdiri dengan kedua kaki rapat berdampingan.' },
+    { n: 'Semi-tandem', d: 'Letakkan sisi tumit satu kaki menempel pada sisi jempol kaki yang lain.' },
+    { n: 'Tandem', d: 'Satu kaki tepat di depan kaki lain, tumit depan menempel pada ujung jari kaki belakang.' },
+    { n: 'Satu kaki', d: 'Berdiri dengan satu kaki, kaki lain diangkat sedikit dari lantai.' }
+  ];
+  var S, timer = null;
+
+  function fresh() {
+    return { step: 0, age: '', sex: '', red: [false,false,false,false,false,false], urgent: false,
+      fall: [null,null,null], diz: [null,null,null,null,null,null,null,null,null,null],
+      cs: null, fs: null, tug: null, run: null, saved: false };
+  }
+  S = fresh();
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+  function now() { return performance.now(); }
+  function fmt(ms, d) { return (ms / 1000).toFixed(d === undefined ? 1 : d).replace('.', ','); }
+  function buzz() { try { navigator.vibrate && navigator.vibrate(200); } catch (e) {} }
+  function allSet(a) { return a.every(function (x) { return x !== null; }); }
+
+  function drawBar() {
+    var h = '';
+    for (var i = 0; i < STEPS.length; i++) h += '<i class="' + (i < S.step ? 'done' : i === S.step ? 'now' : '') + '"></i>';
+    document.getElementById('bar').innerHTML = h;
+    document.getElementById('steplabel').textContent = 'Langkah ' + (S.step + 1) + ' dari ' + STEPS.length;
+  }
+  function go(n) { stopTimer(); S.step = n; S.run = null; render(); window.scrollTo(0, 0); }
+
+  function readHist() { try { return JSON.parse(localStorage.getItem('balanceScanLansia') || '[]'); } catch (e) { return []; } }
+  function saveHist(x) { try { var h = readHist(); h.unshift(x); localStorage.setItem('balanceScanLansia', JSON.stringify(h.slice(0, 5))); } catch (e) {} }
+
+  function csNorm(age, sex) {
+    var t = [[64, 14, 12], [69, 12, 11], [74, 12, 10], [79, 11, 10], [84, 10, 9], [89, 8, 8], [200, 7, 4]];
+    for (var i = 0; i < t.length; i++) if (age <= t[i][0]) return sex === 'M' ? t[i][1] : t[i][2];
+    return 7;
+  }
+  function dizScore() { return S.diz.reduce(function (a, b) { return a + (b || 0); }, 0); }
+
+  /* ---------- screens ---------- */
+  function vStart() {
+    var hist = readHist(), hh = '';
+    if (hist.length) hh = '<div class="card"><h3>Hasil sebelumnya di perangkat ini</h3><div class="hist">' +
+      hist.map(function (x) { return '<div>' + esc(x.date) + ' · ' + esc(x.verdict) + '</div>'; }).join('') + '</div></div>';
+    return '<div class="card"><h2>Siapkan dulu</h2>' +
+      '<ol class="ol"><li>Ajak <b>satu pendamping</b> yang berdiri di dekat lansia selama tes.</li>' +
+      '<li>Siapkan kursi bersandaran tanpa roda, dekat dinding, dengan tinggi duduk sekitar 43 cm.</li>' +
+      '<li>Pakai alas kaki datar yang tidak licin atau tanpa alas kaki.</li>' +
+      '<li>Sediakan lantai kosong sepanjang 3 meter, dan beri tanda di ujungnya.</li>' +
+      '<li>Hentikan tes bila muncul pusing berat, nyeri dada, atau sesak.</li></ol></div>' +
+      '<div class="card"><h3>Data lansia</h3>' +
+      '<div class="field"><label class="l" for="age">Usia (tahun)</label><input type="number" id="age" inputmode="numeric" min="40" max="110" value="' + esc(S.age) + '"></div>' +
+      '<div class="field"><span class="l" id="sexl">Jenis kelamin</span><div class="seg c2" role="radiogroup" aria-labelledby="sexl">' +
+      '<label><input type="radio" name="sex" value="M"' + (S.sex === 'M' ? ' checked' : '') + '><span>Laki-laki</span></label>' +
+      '<label><input type="radio" name="sex" value="F"' + (S.sex === 'F' ? ' checked' : '') + '><span>Perempuan</span></label></div></div>' +
+      '<button class="btn" id="startbtn" data-act="startok"' + (startOk() ? '' : ' disabled') + '>Mulai skrining</button></div>' + hh;
+  }
+  function startOk() { var a = +S.age; return a >= 40 && a <= 110 && (S.sex === 'M' || S.sex === 'F'); }
+
+  function vRed() {
+    var h = '<div class="card"><h2>Tanda bahaya</h2><p>Centang bila ada yang sedang dialami sekarang atau baru saja terjadi.</p>';
+    RED.forEach(function (t, i) { h += '<label class="chk" for="r' + i + '"><input type="checkbox" id="r' + i + '" data-r="' + i + '"' + (S.red[i] ? ' checked' : '') + '><span>' + esc(t) + '</span></label>'; });
+    return h + '<button class="btn" data-act="rednext">Lanjut</button></div>';
+  }
+
+  function seg(name, opts, val, idx) {
+    return '<div class="seg c' + opts.length + '" role="radiogroup">' + opts.map(function (o, k) {
+      var id = name + idx + '_' + k;
+      return '<label for="' + id + '"><input type="radio" id="' + id + '" name="' + name + idx + '" data-g="' + name + '" data-i="' + idx + '" value="' + o[0] + '"' + (String(val) === String(o[0]) ? ' checked' : '') + '><span>' + o[1] + '</span></label>';
+    }).join('') + '</div>';
+  }
+
+  function vFall() {
+    var h = '<div class="card"><h2>Riwayat jatuh</h2>';
+    FALL.forEach(function (q, i) {
+      h += '<fieldset><legend>' + esc(q) + '</legend>' + seg('fall', [[1, 'Ya'], [0, 'Tidak']], S.fall[i], i) + '</fieldset>';
+    });
+    return h + '<button class="btn" id="nextbtn" data-act="fallnext"' + (allSet(S.fall) ? '' : ' disabled') + '>Lanjut</button></div>';
+  }
+
+  function vDiz() {
+    var h = '<div class="card"><h2>Keluhan pusing</h2><p>Dalam sebulan terakhir, seberapa sering pernyataan ini terjadi?</p>';
+    DIZ.forEach(function (q, i) {
+      h += '<fieldset><legend>' + (i + 1) + '. ' + esc(q) + '</legend>' + seg('diz', [[0, 'Tidak'], [1, 'Kadang'], [2, 'Sering']], S.diz[i], i) + '</fieldset>';
+    });
+    return h + '<button class="btn" id="nextbtn" data-act="biznext"' + (allSet(S.diz) ? '' : ' disabled') + '>Lanjut</button></div>';
+  }
+
+  function vCs() {
+    var r = S.run;
+    if (!r) return '<div class="card"><h2>Duduk-berdiri 30 detik</h2>' +
+      '<p>Tes kekuatan kaki. Kekuatan kaki yang kurang meningkatkan risiko jatuh.</p>' +
+      '<ol class="ol"><li>Duduk di tengah kursi, punggung tegak, telapak kaki rata di lantai.</li>' +
+      '<li>Silangkan tangan di dada.</li>' +
+      '<li>Berdiri tegak sepenuhnya lalu duduk lagi, sebanyak mungkin selama 30 detik.</li>' +
+      '<li>Pendamping menekan tombol setiap kali lansia berdiri tegak.</li></ol>' +
+      '<div class="notice">Pendamping berdiri di dekat kursi dan siap menahan.</div>' +
+      '<button class="btn" data-act="csstart">Mulai 30 detik</button></div>';
+    if (r.phase === 'run') return '<div class="card"><div class="clock"><div class="t" id="tm">30</div><div class="u">detik tersisa</div></div>' +
+      '<div class="counter"><button class="btn quiet" data-act="csminus" aria-label="Kurangi">−</button><div class="n" id="cn">' + r.count + '</div><div></div></div>' +
+      '<button class="btn tap" data-act="csplus">+1 Berdiri tegak</button></div>';
+    return '<div class="card"><h3>Waktu habis</h3><p>Periksa jumlah berdiri tegak. Ubah bila perlu.</p>' +
+      '<div class="counter"><button class="btn quiet" data-act="csminus" aria-label="Kurangi">−</button><div class="n" id="cn">' + r.count + '</div><button class="btn alt" data-act="csplus" aria-label="Tambah">+</button></div>' +
+      '<div class="btns"><button class="btn" data-act="csdone">Simpan dan lanjut</button><button class="btn quiet" data-act="csredo">Ulangi tes</button></div></div>';
+  }
+
+  function vFs() {
+    var r = S.run;
+    if (!r) return '<div class="card"><h2>Keseimbangan 4 tahap</h2><p>Lansia berdiri tanpa berpegangan selama 10 detik pada setiap posisi. Tes berhenti bila posisi tidak bisa ditahan.</p>' +
+      '<div class="notice">Pendamping berdiri di sisi lansia dan siap menahan. Boleh pakai kacamata.</div>' +
+      '<button class="btn" data-act="fsbegin">Mulai tahap 1</button></div>';
+    var st = STAGES[r.stage];
+    var head = '<div class="top-row"><h3>Tahap ' + (r.stage + 1) + ' dari 4: ' + st.n + '</h3></div><p>' + st.d + '</p>';
+    if (r.phase === 'ready') return '<div class="card">' + head + '<button class="btn" data-act="fsgo">Mulai hitung 10 detik</button></div>';
+    if (r.phase === 'run') return '<div class="card">' + head + '<div class="clock"><div class="t" id="tm">0,0</div><div class="u">detik dari 10</div></div>' +
+      '<button class="btn stop" data-act="fsfail">Kehilangan keseimbangan</button></div>';
+    return '<div class="card"><h3>Tahap ' + (r.stage + 1) + ' berhasil</h3><p>Ditahan selama 10 detik.</p>' +
+      '<button class="btn" data-act="fsnext">' + (r.stage < 3 ? 'Lanjut ke tahap ' + (r.stage + 2) : 'Selesai') + '</button></div>';
+  }
+
+  function vTug() {
+    var r = S.run;
+    if (!r) return '<div class="card"><h2>Tes jalan (Timed Up and Go)</h2>' +
+      '<ol class="ol"><li>Lansia duduk bersandar di kursi.</li>' +
+      '<li>Setelah tombol ditekan, berdiri, berjalan 3 meter sampai tanda dengan kecepatan biasa, berbalik, kembali, lalu duduk.</li>' +
+      '<li>Pendamping menekan “Selesai” saat lansia sudah duduk dan bersandar.</li></ol>' +
+      '<div class="notice">Pendamping berjalan di samping lansia, bukan di depan.</div>' +
+      '<button class="btn" data-act="tugstart">Mulai berjalan</button></div>';
+    if (r.phase === 'run') return '<div class="card"><div class="clock"><div class="t" id="tm">0,0</div><div class="u">detik</div></div>' +
+      '<button class="btn stop" data-act="tugstop">Selesai (sudah duduk)</button></div>';
+    return '<div class="card"><h3>Waktu</h3><div class="clock"><div class="t">' + fmt(r.time) + '</div><div class="u">detik</div></div>' +
+      '<div class="btns"><button class="btn" data-act="tugdone">Simpan dan lihat hasil</button><button class="btn quiet" data-act="tugredo">Ulangi tes</button></div></div>';
+  }
+
+  /* ---------- scoring ---------- */
+  function score() {
+    var it = [];
+    var nf = S.fall.filter(function (x) { return x === 1; }).length;
+    it.push({ name: 'Riwayat jatuh dan rasa tidak stabil', val: nf + ' dari 3 jawaban “Ya”', lvl: nf >= 2 ? 'bad' : nf === 1 ? 'warn' : 'ok',
+      note: nf >= 2 ? 'Beberapa jawaban “Ya” menandakan perlu penilaian risiko jatuh.' : nf === 1 ? 'Satu jawaban “Ya”. Perlu dipantau.' : '' });
+    var ds = dizScore();
+    it.push({ name: 'Keluhan pusing', val: 'Skor ' + ds + ' dari 20', lvl: ds >= 12 ? 'bad' : ds >= 6 ? 'warn' : 'ok',
+      note: ds >= 12 ? 'Keluhan pusing cukup berat dan mengganggu aktivitas.' : ds >= 6 ? 'Keluhan sedang.' : 'Keluhan ringan atau tidak ada.' });
+    var age = +S.age, norm = csNorm(age, S.sex), c = S.cs;
+    it.push({ name: 'Duduk-berdiri 30 detik (kekuatan kaki)', val: c + ' kali', lvl: c < norm ? 'bad' : 'ok',
+      note: 'Batas bawah untuk usia ' + age + ' tahun: ' + norm + ' kali.' + (c < norm ? ' Di bawah rata-rata dan terkait risiko jatuh.' : '') });
+    var done = S.fs.done;
+    it.push({ name: 'Keseimbangan 4 tahap', val: done >= 4 ? 'Semua tahap selesai' : done === 0 ? 'Gagal pada tahap 1' : 'Selesai sampai tahap ' + done,
+      lvl: done < 3 ? 'bad' : 'ok', note: done < 3 ? 'Belum mampu menahan posisi tandem selama 10 detik, yang terkait risiko jatuh.' : done === 3 ? 'Posisi tandem tertahan. Berdiri satu kaki belum 10 detik.' : 'Baik.' });
+    var t = S.tug / 1000;
+    it.push({ name: 'Tes jalan (Timed Up and Go)', val: fmt(S.tug) + ' detik', lvl: t >= 12 ? 'bad' : t >= 10 ? 'warn' : 'ok',
+      note: t >= 12 ? 'Batas skrining adalah 12 detik. Waktu lebih lama berarti risiko jatuh lebih tinggi.' : t >= 10 ? 'Mendekati batas 12 detik.' : 'Dalam batas normal.' });
+    var bad = it.filter(function (x) { return x.lvl === 'bad'; }).length, warn = it.filter(function (x) { return x.lvl === 'warn'; }).length;
+    var verdict, cls;
+    if (bad >= 1) { verdict = 'Disarankan periksa ke dokter'; cls = bad >= 2 ? 'bad' : 'warn'; }
+    else if (warn >= 1) { verdict = 'Perlu dipantau'; cls = 'warn'; }
+    else { verdict = 'Risiko jatuh rendah'; cls = 'ok'; }
+    return { items: it, bad: bad, warn: warn, verdict: verdict, cls: cls };
+  }
+  var LV = { ok: 'Baik', warn: 'Perhatian', bad: 'Periksa' };
+
+  function dateStr(o) { return new Date().toLocaleDateString('id-ID', o); }
+
+  function vRes() {
+    if (S.urgent) {
+      var which = RED.filter(function (_, i) { return S.red[i]; });
+      if (!S.saved) { S.saved = true; saveHist({ date: dateStr({ day: 'numeric', month: 'short', year: 'numeric' }), verdict: 'Tanda bahaya, segera ke IGD' }); }
+      return '<div class="verdict bad"><span class="small muted">Hasil skrining</span><div class="big">Segera ke IGD</div>' +
+        '<p>Tanda yang dicentang bisa menjadi gejala stroke atau gangguan jantung. Jangan lanjutkan tes. Bawa lansia ke IGD terdekat atau hubungi 119 sekarang, dan jangan menyetir sendiri.</p></div>' +
+        '<div class="card"><h3>Tanda yang dicentang</h3><ul class="ol">' + which.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>' +
+        '<button class="btn alt" data-act="restart">Mulai ulang</button></div>';
+    }
+    var sc = score();
+    if (!S.saved) { S.saved = true; saveHist({ date: dateStr({ day: 'numeric', month: 'short', year: 'numeric' }), verdict: sc.verdict }); }
+    var msg = sc.bad >= 1 ? 'Buatlah janji ke dokter atau Puskesmas dalam waktu dekat. Dokter dapat memeriksa tekanan darah saat berdiri, obat yang dipakai, penglihatan, dan telinga bagian dalam.'
+      : sc.warn >= 1 ? 'Belum ada tanda berat. Ulangi skrining dalam 3 bulan dan jaga aktivitas fisik.' : 'Tidak ada tanda yang perlu ditindaklanjuti dari tes ini. Ulangi skrining setiap tahun.';
+    var h = '<div class="verdict ' + sc.cls + '"><span class="small muted">Hasil skrining</span><div class="big">' + sc.verdict + '</div><p>' + msg + '</p></div>';
+    h += '<div class="card"><h3>Rincian</h3><div class="rows">' + sc.items.map(function (x) {
+      return '<div class="row"><span>' + esc(x.name) + '</span><span class="val">' + esc(x.val) + ' <span class="pill ' + x.lvl + '">' + LV[x.lvl] + '</span></span>' + (x.note ? '<span class="note">' + esc(x.note) + '</span>' : '') + '</div>';
+    }).join('') + '</div></div>';
+    h += '<div class="card"><h3>Saran di rumah</h3><ul class="ol"><li>Pasang lampu terang di jalur ke kamar mandi dan singkirkan karpet yang licin.</li>' +
+      '<li>Bangun perlahan: duduk 1 menit di tepi tempat tidur sebelum berdiri.</li>' +
+      '<li>Latihan berdiri satu kaki sambil berpegangan, 10 detik, beberapa kali sehari.</li></ul></div>';
+    var txt = 'BALANCE SCAN, ' + dateStr({ day: 'numeric', month: 'long', year: 'numeric' }) + '\nUsia ' + S.age + ' tahun, ' + (S.sex === 'M' ? 'laki-laki' : 'perempuan') + '\nHasil: ' + sc.verdict + '\n' +
+      sc.items.map(function (x) { return '- ' + x.name + ': ' + x.val; }).join('\n');
+    h += '<div class="card"><h3>Bawa ke dokter</h3><pre class="sum" id="sum">' + esc(txt) + '</pre>' +
+      '<div class="btns"><button class="btn alt" data-act="copy" id="copybtn">Salin ringkasan</button><button class="btn" data-act="restart">Ulangi skrining</button></div></div>';
+    return h;
+  }
+
+  function render() {
+    drawBar();
+    var id = STEPS[S.step].id, h;
+    if (id === 'start') h = vStart(); else if (id === 'red') h = vRed(); else if (id === 'fall') h = vFall();
+    else if (id === 'diz') h = vDiz(); else if (id === 'cs') h = vCs(); else if (id === 'fs') h = vFs();
+    else if (id === 'tug') h = vTug(); else h = vRes();
+    app.innerHTML = h;
+  }
+
+  /* ---------- timers ---------- */
+  function csTick() {
+    var r = S.run, left = 30000 - (now() - r.t0), el = document.getElementById('tm');
+    if (left <= 0) { stopTimer(); r.phase = 'done'; buzz(); return render(); }
+    if (el) el.textContent = Math.ceil(left / 1000);
+  }
+  function fsTick() {
+    var r = S.run, el = (now() - r.t0), t = document.getElementById('tm');
+    if (el >= 10000) { stopTimer(); r.phase = 'ok'; S.fs.done = r.stage + 1; buzz(); return render(); }
+    if (t) t.textContent = fmt(el);
+  }
+  function tugTick() { var t = document.getElementById('tm'); if (t) t.textContent = fmt(now() - S.run.t0); }
+  function setCount(v) { S.run.count = Math.max(0, Math.min(40, v)); var n = document.getElementById('cn'); if (n) n.textContent = S.run.count; }
+
+  /* ---------- events ---------- */
+  app.addEventListener('input', function (ev) {
+    if (ev.target.id === 'age') { S.age = ev.target.value; var b = document.getElementById('startbtn'); if (b) b.disabled = !startOk(); }
+  });
+  app.addEventListener('change', function (ev) {
+    var t = ev.target;
+    if (t.name === 'sex') { S.sex = t.value; var b = document.getElementById('startbtn'); if (b) b.disabled = !startOk(); return; }
+    if (t.hasAttribute && t.hasAttribute('data-r')) { S.red[+t.getAttribute('data-r')] = t.checked; return; }
+    var g = t.getAttribute && t.getAttribute('data-g');
+    if (g) {
+      S[g][+t.getAttribute('data-i')] = +t.value;
+      var nb = document.getElementById('nextbtn'); if (nb) nb.disabled = !allSet(S[g]);
+    }
+  });
+  app.addEventListener('click', function (ev) {
+    var t = ev.target.closest('[data-act]'); if (!t) return;
+    var a = t.getAttribute('data-act'), r = S.run;
+    if (a === 'startok') return startOk() ? go(1) : null;
+    if (a === 'rednext') { S.urgent = S.red.some(Boolean); return S.urgent ? go(STEPS.length - 1) : go(2); }
+    if (a === 'fallnext') return go(3);
+    if (a === 'biznext') return go(4);
+    if (a === 'csstart') { S.run = { phase: 'run', count: 0, t0: now() }; render(); timer = setInterval(csTick, 100); return; }
+    if (a === 'csplus') return setCount(r.count + 1);
+    if (a === 'csminus') return setCount(r.count - 1);
+    if (a === 'csdone') { S.cs = r.count; return go(5); }
+    if (a === 'csredo') { S.run = null; return render(); }
+    if (a === 'fsbegin') { S.fs = { done: 0 }; S.run = { stage: 0, phase: 'ready' }; return render(); }
+    if (a === 'fsgo') { r.phase = 'run'; r.t0 = now(); render(); timer = setInterval(fsTick, 100); return; }
+    if (a === 'fsfail') { stopTimer(); return go(6); }
+    if (a === 'fsnext') { if (r.stage >= 3) return go(6); S.run = { stage: r.stage + 1, phase: 'ready' }; return render(); }
+    if (a === 'tugstart') { S.run = { phase: 'run', t0: now() }; render(); timer = setInterval(tugTick, 100); return; }
+    if (a === 'tugstop') { stopTimer(); r.time = now() - r.t0; r.phase = 'done'; return render(); }
+    if (a === 'tugredo') { S.run = null; return render(); }
+    if (a === 'tugdone') { S.tug = r.time; return go(7); }
+    if (a === 'restart') { stopTimer(); S = fresh(); return go(0); }
+    if (a === 'copy') {
+      var txt = document.getElementById('sum').textContent, btn = document.getElementById('copybtn');
+      var fb = function () { try { var g = document.createRange(); g.selectNodeContents(document.getElementById('sum')); var s = window.getSelection(); s.removeAllRanges(); s.addRange(g); } catch (e) {} btn.textContent = 'Teks terpilih, salin secara manual'; };
+      try { navigator.clipboard.writeText(txt).then(function () { btn.textContent = 'Tersalin'; }, fb); } catch (e) { fb(); }
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
